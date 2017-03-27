@@ -1,0 +1,164 @@
+Activity4种启动模式：
+1.standard:
+默认启动模式，每次激活Activity都会创建Activity，并放入任务栈中，永远不会调用onNewIntent
+2.singleTop：
+若任务栈栈顶正好存在该Activity实例，就重用该实例，并调用onNewIntent，否则就创建新实例并放入栈顶
+（即使栈中已存在改Activity实例，只要不在栈顶都会创建实例而不会调用onNewIntent）
+3.singleTask：
+若栈中已有Activity实例，就重用该实例（会调用实例的onNewIntent）。重用时，让该实例回到栈顶。
+因此在它上面的实例会被移除栈，如果栈中不存在该实例，将会创建新的实例放入栈中（此时不会调用onNewIntent）
+4.singleInstance：
+在一个新栈中创建该Activity实例，并让许多应用共享该栈中的该Activity实例。一旦该模式的Activity实例存在于某个栈中，
+任何应用再激活该Activity时都会重用该栈中的实例，效果相当于多个应用程序共享一个应用，不管谁激活该Activity都会进入同一个应用中。
+当调用到onNewIntent的时候，需要在onNewIntent()中使用setIntent(intent)赋值给Activity的intent，否则，后续的getIntent都是得到老的intent。
+
+======================================================================
+Android studio Maven仓库使用
+
+AS中引入library到项目，只需在该模块的build.gradle中添加一行代码：
+dependencies{
+	compile 'com.**.sdk:**-jni:0.0.1'
+}
+一行代码就可以使用这个库了。
+
+AS从哪里得到这个库？
+从build.gradle里定义的Maven仓库服务器下载。Apache Maven是Apache开发的一个工具，提供用于贡献library的文件服务器。
+两个标准的Android library的文件服务器：jcenter和Maven Central
+jcentral：
+bintray.com维护的Maven仓库。可在这看到整个仓库http://jcenter.bintray.com/
+在项目的build.gradle中定义了仓库就可使用：
+allprojects{
+	repositories{
+		jcenter()
+	}
+}
+
+Maven Central
+sonatype.org维护的Maven仓库。可在这看到整个仓库https://oss.sonatype.org/content/repositories/releases/
+在项目的build.gradle中定义了仓库就可使用：
+allprojects{
+	repositories{
+		mavenCentral()
+	}
+}
+
+jcenter更好。AS默认使用jcenter。
+- jcenter通过CDN发送library，开发者可以享受到更快的下载体验。
+- jcenter是全世界最大的Java仓库，因此在Maven Central 上有的，在jcenter上也极有可能有。换句话说jcenter是Maven Central的超集。
+- 上传library到仓库很简单，不需要像在 Maven Central上做很多复杂的事情。
+- 友好的用户界面
+- 如果你想把library上传到 Maven Central ，你可以在bintray网站上直接点击一个按钮就能实现。
+
+gradle如何在仓库中获取library？
+build.gradle输入了以下代码时，库会下载到工程中：
+dependencies{
+	complile 'com.**.sdk:**-jni:0.0.1'
+}
+library字符串形式:------->     GROUP_ID:ARTIFACT_ID:VERSION
+若library具有相同的group,它们将共享一个GROUP_ID。
+通常我们以开发者包名紧跟着library的group名称命名。
+ARTIFACT_ID中是library的真实名称。
+添加了依赖会发生什么？
+1.gradle访问Maven仓库服务器这个library存在与否，若存在，gradle会请求library路径，一般路径形式为：GROUP_ID/ARTIFACT_ID/VERSION_ID
+2.AS下载文件到工程，与项目一起编译。
+相当于自己下载文件到PC后，拷贝到工程与项目一起编译。
+
+了解AAR文件
+仓库中存储的有两种类型的library：jar和aar。
+aar文件在jar文件之上开发。因为Android library需要植入Android特有的文件，如AndroidManifest.xml,资源文件，Asset或JNI
+aar总的来说和jar一样都只是普通的zip文件。但具有不同的文件结构。
+jar文件以classes.jar的名字嵌入到aar中。
+其余文件：
+- /AndroidManifest.xml (mandatory)
+- /classes.jar (mandatory)
+- /res/ (mandatory)
+- /R.txt (mandatory)
+- /assets/ (optional)
+- /libs/*.jar (optional)
+- /jni/<abi>/*.so (optional)
+- /proguard.txt (optional)
+- /lint.jar (optional)
+
+如何上传library到私有Maven仓库
+
+1.在工程的gradle.properties设置私有仓库的信息：
+## 项目信息
+PROJ_GROUP = com.hikcentral.sdk
+## MAVEN仓库信息
+NEXUS_USERNAME = ***
+NEXUS_PASSWORD = ***
+LOCAL_REPO_RELEASE_URL = http:/**.**.**.28:8081/repository/***/
+LOCAL_REPO_SNAPSHOTS_URL = http://**.**.**.28:8081/repository/***-snapshot/
+
+2.在module的build.gradle设置启用maven插件
+//启用maven插件
+apply plugin: 'maven'
+uploadArchives{
+    repositories.mavenDeployer{
+        repository(url: LOCAL_REPO_SNAPSHOTS_URL){
+            authentication(userName: NEXUS_USERNAME, password: NEXUS_PASSWORD)
+            pom.groupId = PROJ_GROUP
+            pom.artifactId = "**-sdk"
+            pom.version = "0.0.1-SNAPSHOT"
+        }
+    }
+}
+
+如何下载私有maven仓库到工程
+在工程的build.gradle中添加：
+allprojects {
+    repositories {
+        maven{
+            url "http://**.**.**.28:8081/repository/**-all/"
+            credentials{
+                username '***'
+                password '***'
+            }
+        }
+        jcenter()
+    }
+}
+
+
+============================================================
+
+Android生命周期
+onCreate、onStart、onResume、onPause、onStop、onRestart、onDestroy
+开启Activity：
+onCreate()->onStart()->onResume()【Activity is running】->onPause()【Activity no longer visible】->onStop()->onDestroy()【Activity shut down】
+
+onPause()->【Activity comes to foreground】->onResume()
+onPause()->【Other Application need memory-> Progress killed ->back to the Activity】->onCreate()
+
+onStop()->【Other Application need memory-> Progress killed ->back to the Activity】->onCreate()
+onStop()->【The Activity comes to foreground】->onReStart()->onStart()
+
+=============================================================
+
+启动/关闭adb服务，解决无法detach应用进行调试
+adb kill-server
+adb start-server
+
+=============================================================
+
+无法识别最新c++11，build失败解决方法
+module的build.gradle中添加cppFlag：
+externalNativeBuild{
+	cmake{
+		cppFlags "-std=c++11 -frtti -fexceptions"
+	}
+}
+
+=============================================================
+
+Error:(1, 0) Your project path contains non-ASCII characters. 
+This will most likely cause the build to fail on Windows. Please move your project to a different directory. 
+See http://b.android.com/95744 for details. 
+This warning can be disabled by using the command line flag -Dcom.android.build.gradle.overridePathCheck=true,
+ or adding the line com.android.build.gradle.overridePathCheck=true' to gradle.properties file in the project directory.
+
+=============================================================
+
+
+
+
