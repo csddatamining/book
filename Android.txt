@@ -158,6 +158,125 @@ This warning can be disabled by using the command line flag -Dcom.android.build.
  or adding the line com.android.build.gradle.overridePathCheck=true' to gradle.properties file in the project directory.
 
 =============================================================
+使用JNI和Maven调用本地函数
+Java调用本地函数步骤：
+1.javac the .java file;
+2.javah the class so you get a header file;
+3.compile the C source,
+4.link the C source
+
+使用Maven插件：native-maven-plugin
+
+=============================================================
+问题：app包含Library Project（包含native code），debug模式下无法跳入代码，
+AS提示：Source Code does not match the bytecode
+网上的问题：
+Source Code does not match the bytecode" and can not debug into some code parts in a library module
+https://youtrack.jetbrains.com/issue/IDEA-159697 
+解决方法：
+更新AS，ASbug
+
+=============================================================
+A problem occurred configuring project ':app'.
+> Could not resolve all dependencies for configuration ':app:_debugApkCopy'.
+   > Could not find com.android.support:multidex:.
+     Required by:
+         project :app
+
+This can happen when there is an error in an update. To fix it open android sdk manager and:
+
+Uninstall android support repository
+Install again android support repository
+
+=============================================================
+
+onSaveInstanceState
+1.Activity的生命周期，主要用于在Activity销毁时保存一些信息
+2.当Activity只执行onPause方法时（Activity a打开一个透明Activity b）这时候如果APP设置的targetVersion大于android 3.0
+则不会执行onSaveInstanceState方法
+3.当Activity执行onStop方法时，都会执行onSavedInstanceState方法
+
+=============================================================
+CMake构建实践
+
+特点：
+1.开放源码
+2.跨平台
+3.可管理大型项目
+4.简化编译构建构成和编译过程
+5.高效率
+6.可扩展
+
+注：CMakeLists.txt 为cmake的构建定义文件，文件名大小写相关。如果工程存在多个目录，需确保每个要管理的目录。
+如果工程存在多个目录，需确保每个要管理的目录都要存在一个CMakeLists.txt
+
+命令：
+
+#该指令指定工程名称，并可指定工程支持的语言，支持的语言列表是可忽略的。
+#该指定隐式的定义了两个cmake变量：<projectname>_BINARY_DIR及<projectname>_SOURSE_DIR.
+PROJECT(projectname [CXX] [C] [Java]])
+
+cmake系统帮助我们预定义了PROJECT_BINARY_DIR和PROJECT_SOURCE_DIR变量，值与<projectname>_BINARY_DIR及<projectname>_SOURSE_DIR一致
+建议直接使用PROJECT_BINARY_DIR和PROJECT_SOURCE_DIR
+
+#用来显式的定义变量。如SET(SRC_LIST main.c),多个源文件：SET(SRC_LIST main.c file1.c file2.c),note：参数使用空格或;分开
+SET(VAR [VALUE] [CACHE TYPE DOCSTRING [FORCE]])
+
+#MESSAGE指令用于向终端输出用户自定义的信息，包含三种类型：
+#SEND_ERROR，产生错误，生成过程被跳过。
+#SATUS，输出前缀为—的信息。
+#FATAL_ERROR，立即终止所有cmake过程。
+MESSAGE([SEND_ERROR | STATUS | FATAL_ERROR] "...")
+
+cmake使用${}来引用变量，但在IF控制语句，变量直接使用变量名引用，不需要${}。
+如果使用了${}去应用变量，IF会判断${}所代表的值的变量。
+
+基本语法规则：
+1.变量使用${}方式取值，但在IF控制语句中直接使用变量名
+2.指令（arg1 arg2）参数使用空格或分号分开
+3.指令大小写无关，参数和变量大小写相关，推荐使用大写指令
+
+
+
+
+
+
+=============================================================
+
+无响应
+搜索Application is not responding再往前查
+崩溃
+
+
+=============================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
